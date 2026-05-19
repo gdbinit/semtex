@@ -74,12 +74,12 @@ int map_stack_and_initial_registers(uc_engine *uc)
         UC_X86_REG_R11, UC_X86_REG_R12, UC_X86_REG_R13, UC_X86_REG_R14,
         UC_X86_REG_R15, UC_X86_REG_CS,  UC_X86_REG_FS,  UC_X86_REG_GS, UC_X86_REG_EFLAGS
     };
-    uint64_t vals[sizeof(x86_64_regs)] = {0};
-    void *ptrs[sizeof(x86_64_regs)] = {0};
-    for (int i = 0; i < sizeof(x86_64_regs); i++) {
+    uint64_t vals[sizeof(x86_64_regs)/sizeof(*x86_64_regs)] = {0};
+    void *ptrs[sizeof(x86_64_regs)/sizeof(*x86_64_regs)] = {0};
+    for (int i = 0; i < sizeof(x86_64_regs)/sizeof(*x86_64_regs); i++) {
         ptrs[i] = &vals[i];
     }
-    err = uc_reg_write_batch(uc, x86_64_regs, ptrs, sizeof(x86_64_regs));
+    err = uc_reg_write_batch(uc, x86_64_regs, ptrs, sizeof(x86_64_regs)/sizeof(*x86_64_regs));
     if (err != UC_ERR_OK) {
         ERROR_MSG("Failed to initialize all registers: %s.", uc_strerror(err));
         uc_close(uc);

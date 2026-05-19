@@ -47,8 +47,6 @@ lipo -thin x86_64 -o nonfatlibrary.dylib fatlibrary.dylib
 
 - Some x86_64 TNT crack that you want to dump. Usually found as `libC.dylib` or `libConfigurer64.dylib`, inside the `Resources` or `Frameworks` folders. Don't ask me where to get them :PPPP
 
-- [Unicorn Engine](https://github.com/unicorn-engine/unicorn/releases) version <= 2.0.1
-
-Versions >= 2.1 introduced some annoying checks in registers sizes so batch read/writing needs fixes.
+- [Unicorn Engine](https://github.com/unicorn-engine/unicorn/releases) version >= 2.x
 
 - [Zydis](https://github.com/zyantific/zydis): amalgamated version 4.1.0 is already included.

@@ -69,10 +69,10 @@ void unicorn_hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *use
     // mprotect call
     // int mprotect(void *addr, size_t len, int prot);
     if (address == CODE_ADDRESS + udata->mprotect_stub) {
-        for (int i = 0; i < sizeof(arg_reg); i++) {
+        for (int i = 0; i < sizeof(arg_reg)/sizeof(*arg_reg); i++) {
             arg_ptr[i] = &arg_val[i];
         }
-        if (uc_reg_read_batch(uc, arg_reg, arg_ptr, sizeof(arg_reg)) != UC_ERR_OK) {
+        if (uc_reg_read_batch(uc, arg_reg, arg_ptr, sizeof(arg_reg)/sizeof(*arg_reg)) != UC_ERR_OK) {
             ERROR_MSG("Failed to batch read mprotect() arguments registers.");
             return;
         }
@@ -122,10 +122,10 @@ void unicorn_hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *use
     // this is the stub address
     if (address == CODE_ADDRESS + udata->dyld_get_slide_stub) {
         DEBUG_MSG("Previous min: 0x%llx max: 0x%llx", min_addr, max_addr);
-        for (int i = 0; i < sizeof(arg_reg); i++) {
+        for (int i = 0; i < sizeof(arg_reg)/sizeof(*arg_reg); i++) {
             arg_ptr[i] = &arg_val[i];
         }
-        if (uc_reg_read_batch(uc, arg_reg, arg_ptr, sizeof(arg_reg)) != UC_ERR_OK) {
+        if (uc_reg_read_batch(uc, arg_reg, arg_ptr, sizeof(arg_reg)/sizeof(*arg_reg)) != UC_ERR_OK) {
             ERROR_MSG("Failed to batch read mprotect() arguments registers.");
             return;
         }

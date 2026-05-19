@@ -31,14 +31,14 @@ int get_x64_registers(uc_engine *uc, x86_thread_state64_t *state)
         UC_X86_REG_R11, UC_X86_REG_R12, UC_X86_REG_R13, UC_X86_REG_R14,
         UC_X86_REG_R15, UC_X86_REG_CS, UC_X86_REG_FS, UC_X86_REG_GS, UC_X86_REG_EFLAGS
     };
-    uint64_t vals[sizeof(x86_64_regs)] = {0};
-    void *ptrs[sizeof(x86_64_regs)] = {0};
+    uint64_t vals[sizeof(x86_64_regs)/sizeof(*x86_64_regs)] = {0};
+    void *ptrs[sizeof(x86_64_regs)/sizeof(*x86_64_regs)] = {0};
     
-    for (int i = 0; i < sizeof(x86_64_regs); i++) {
+    for (int i = 0; i < sizeof(x86_64_regs)/sizeof(*x86_64_regs); i++) {
         ptrs[i] = &vals[i];
     }
     
-    if (uc_reg_read_batch(uc, x86_64_regs, ptrs, sizeof(x86_64_regs)) != UC_ERR_OK) {
+    if (uc_reg_read_batch(uc, x86_64_regs, ptrs, sizeof(x86_64_regs)/sizeof(*x86_64_regs)) != UC_ERR_OK) {
         ERROR_MSG("Failed to read x64 general registers.");
         return -1;
     }
