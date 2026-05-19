@@ -9,7 +9,7 @@
  * A Unicorn Emulator to dump obfuscated code from TNT team x86_64 crack library
  *
  * Created by fG! on 08/03/2025.
- * (c) fG!, 2025 - reverser@put.as - https://reverse.put.as
+ * (c) fG!, 2025-2026 - reverser@put.as - https://reverse.put.as
  *
  * This program is free software: you can redistribute it and/or modify 
  * it under the terms of the GNU General Public License as published by 
@@ -24,7 +24,7 @@
  * You should have received a copy of the GNU General Public License along 
  * with this program. If not, see <https://www.gnu.org/licenses/>.
  *
- * Tested with Apple Silicon macOS, might build and run in Linux :P
+ * Tested with Apple Silicon macOS and Linux
  *
  * https://reverse.put.as/2025/03/13/cracking-the-crackers/
  *
@@ -35,6 +35,7 @@
 #include <getopt.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <inttypes.h>
 #include <unicorn/unicorn.h>
 #include "hooks.h"
 #include "log.h"
@@ -93,7 +94,7 @@ int map_stack_and_initial_registers(uc_engine *uc)
         uc_close(uc);
         return -1;
     }
-    DEBUG_MSG("Wrote initial RSP as 0x%llx", r_rsp);
+    DEBUG_MSG("Wrote initial RSP as 0x%" PRIx64, r_rsp);
     err = uc_reg_write(uc, UC_X86_REG_RBP, &r_rsp);
     if (err != UC_ERR_OK) {
         ERROR_MSG("Failed to write initial RBP register: %s.", uc_strerror(err));

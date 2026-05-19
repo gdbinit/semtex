@@ -1,16 +1,16 @@
 /*
  *
  * 🧨 semtex - A Unicorn Emulator to dump obfuscated code from TNT team x86_64 crack library
- * (c) fG!, 2025 - reverser@put.as - https://reverse.put.as
+ * (c) fG!, 2025-2026 - reverser@put.as - https://reverse.put.as
  *
  */
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <mach-o/loader.h>
-#include <mach-o/nlist.h>
+#include <inttypes.h>
 
+#include "macho.h"
 #include "log.h"
 #include "Zydis.h"
 #include "hooks.h"
@@ -96,7 +96,7 @@ int parse_macho(unsigned char *buf, size_t buf_size, struct user_data *udata)
                         // we have the pointers there so we can link that info with info here
                         // and find which is what
                         if ((sc->flags & SECTION_TYPE) == S_SYMBOL_STUBS) {
-                            // DEBUG_MSG("Found STUBS: 0x%llx", sc->addr);
+                            // DEBUG_MSG("Found STUBS: 0x%" PRIx64, sc->addr);
                             stubs = sc;
                             break;
                         }
@@ -194,7 +194,7 @@ int parse_macho(unsigned char *buf, size_t buf_size, struct user_data *udata)
                 size_t offset = 0;
                 uint64_t result = decode_uleb128(ptr, &offset);
                 uint64_t seg_addr = segments[imm].vmaddr;
-                // DEBUG_MSG("Value: 0x%llx", result + seg_addr);
+                // DEBUG_MSG("Value: 0x%" PRIx64, result + seg_addr);
                 cur_sym_addr = result + seg_addr;
                 ptr += offset;
                 break;
@@ -209,7 +209,7 @@ int parse_macho(unsigned char *buf, size_t buf_size, struct user_data *udata)
                 if (strcmp(string, "__dyld_get_image_vmaddr_slide") == 0) {
                     dyld_get_image_vmaddr_slide_addr = cur_sym_addr;
                 }
-                OUTPUT_MSG("0x%08llx - %s", cur_sym_addr, string);
+                OUTPUT_MSG("0x%08" PRIx64 " - %s", cur_sym_addr, string);
                 oursymtable_ptr->ptr = cur_sym_addr;
                 snprintf(oursymtable_ptr->name, 256, "%s", string);
                 oursymtable_ptr->stub = 0;
@@ -225,8 +225,8 @@ int parse_macho(unsigned char *buf, size_t buf_size, struct user_data *udata)
             break;
         }
     }
-    OUTPUT_MSG("mprotect address: 0x%llx", mprotect_addr);
-    OUTPUT_MSG("_dyld_get_image_vmaddr_slide address: 0x%llx", dyld_get_image_vmaddr_slide_addr);
+    OUTPUT_MSG("mprotect address: 0x%" PRIx64, mprotect_addr);
+    OUTPUT_MSG("_dyld_get_image_vmaddr_slide address: 0x%" PRIx64, dyld_get_image_vmaddr_slide_addr);
 
     // now we need to disassemble the stubs section and find the locations with pointers
     // to the symbols we are interested in
@@ -255,11 +255,11 @@ int parse_macho(unsigned char *buf, size_t buf_size, struct user_data *udata)
                 return -1;
             }
             if (jmp_addr == mprotect_addr) {
-                OUTPUT_MSG("Found _mprotect stub at 0x%llx", ip);
+                OUTPUT_MSG("Found _mprotect stub at 0x%" PRIx64, ip);
                 udata->mprotect_stub = ip;
 
             } else if (jmp_addr == dyld_get_image_vmaddr_slide_addr) {
-                OUTPUT_MSG("Found __dyld_get_image_vmaddr_slide_addr stub at 0x%llx", ip);
+                OUTPUT_MSG("Found __dyld_get_image_vmaddr_slide_addr stub at 0x%" PRIx64, ip);
                 udata->dyld_get_slide_stub = ip;
             }
             // add the address to our table so we can correlate symbols
@@ -298,13 +298,13 @@ int parse_macho(unsigned char *buf, size_t buf_size, struct user_data *udata)
     // it will point to the struct __objc2_class_ro in __objc_const
     // that then points to the class methods, which is what we are looking for
     struct __objc2_class *class = (struct __objc2_class*)objc_data_ptr;
-    DEBUG_MSG("Read-only class info at 0x%llx", (uint64_t)class->info);
+    DEBUG_MSG("Read-only class info at 0x%" PRIx64, (uint64_t)class->info);
     // let's treat it as an offset instead of virtual address
     size_t info_off = (uint64_t)class->info - objc_const->addr;
     
     // get pointer to the read-only class info structure inside __objc_const
     struct __objc2_class_ro *info = (struct __objc2_class_ro *)(buf + objc_const->offset + info_off);
-    DEBUG_MSG("Methods array @ 0x%llx", (uint64_t)info->base_meths);
+    DEBUG_MSG("Methods array @ 0x%" PRIx64, (uint64_t)info->base_meths);
     // once again treat it as an offset
     size_t meths_off = (size_t)info->base_meths - objc_const->addr;
     // now we get the pointer to the "head" of the array
@@ -317,7 +317,7 @@ int parse_macho(unsigned char *buf, size_t buf_size, struct user_data *udata)
     }
     // and we can finally extract the method(s) address
     struct __objc2_meth *m = (struct __objc2_meth*)((char*)ml + sizeof(*ml));
-    OUTPUT_MSG("load method implementation @ 0x%llx", (uint64_t)m->imp);
+    OUTPUT_MSG("load method implementation @ 0x%" PRIx64, (uint64_t)m->imp);
     udata->load_method = (uint64_t)m->imp;
 
     // fix symbols names just because we can 💪
@@ -331,7 +331,7 @@ int parse_macho(unsigned char *buf, size_t buf_size, struct user_data *udata)
     // DEBUG_MSG("Number of indirect syms: %u", dsymtab->nindirectsyms);
     // DEBUG_MSG("dysymtab offset: 0x%x", dsymtab->indirectsymoff);
     // DEBUG_MSG("Reserved: %d", lazy_sym->reserved1);
-    // DEBUG_MSG("Lazy sym addr: 0x%llx", lazy_sym->addr);
+    // DEBUG_MSG("Lazy sym addr: 0x%" PRIx64, lazy_sym->addr);
     // 
     for (uint32_t i = 0; i < dsymtab->nindirectsyms; i++) {
         uint32_t index = *(uint32_t*)(buf + dsymtab->indirectsymoff + i * 4);
@@ -364,7 +364,7 @@ int parse_macho(unsigned char *buf, size_t buf_size, struct user_data *udata)
                 break;
             }
         }
-        DEBUG_MSG("%02d - Obfuscated symbol @ 0x%06llx is \"%s\"", i, addr, sym);
+        DEBUG_MSG("%02d - Obfuscated symbol @ 0x%06" PRIx64 " is \"%s\"", i, addr, sym);
     }
 
     // fix some section names because YES WE CAN! 👍

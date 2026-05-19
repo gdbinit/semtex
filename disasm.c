@@ -1,11 +1,12 @@
 /*
  *
  * 🧨 semtex - A Unicorn Emulator to dump obfuscated code from TNT team x86_64 crack library
- * (c) fG!, 2025 - reverser@put.as - https://reverse.put.as
+ * (c) fG!, 2025-2026 - reverser@put.as - https://reverse.put.as
  *
  */
 
 #include <stdio.h>
+#include <inttypes.h>
 #include "Zydis.h"
 
 void print_disasm(unsigned char *buf, size_t buf_size) 
@@ -25,7 +26,7 @@ void print_disasm(unsigned char *buf, size_t buf_size)
     while ((status = ZydisDecoderDecodeFull(&decoder, readPointer, length, &inst, ops)) != ZYDIS_STATUS_NO_MORE_DATA) {
         // this is one hell of a long 🚂 call...
         ZydisFormatterFormatInstruction(&formatter, &inst, ops, inst.operand_count_visible, format_buffer, sizeof(format_buffer), ip, ZYAN_NULL);
-        printf("0x%08llx  %s\n", ip, format_buffer);
+        printf("0x%" PRIx64 " %s\n", ip, format_buffer);
         readPointer += inst.length;
         length -= inst.length;
         ip += inst.length;

@@ -1,7 +1,7 @@
 /*
  *
  * 🧨 semtex - A Unicorn Emulator to dump obfuscated code from TNT team x86_64 crack library
- * (c) fG!, 2025 - reverser@put.as - https://reverse.put.as
+ * (c) fG!, 2025-2026 - reverser@put.as - https://reverse.put.as
  *
  */
 
@@ -11,6 +11,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <ctype.h>
+#include <inttypes.h>
 #include <unicorn/unicorn.h>
 #include "hooks.h"
 #include "log.h"
@@ -33,7 +34,7 @@ void hexdump(unsigned char *buf, size_t len, uint64_t addr) {
     while (i < len) {
         linelength = (len - i) <= 16 ? len - i : 16;
         z = i;
-        fprintf(stdout, "0x%08llx: ", addr);
+        fprintf(stdout, "0x%08" PRIx64 ": ", addr);
         addr += 16;
         for (x = 0; x < linelength; x++) {
             fprintf(stdout, "%02X ", buf[z++]);
@@ -57,7 +58,7 @@ void hexdump(unsigned char *buf, size_t len, uint64_t addr) {
 // the code hook can be used to trace every instruction executed
 void unicorn_hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data)
 {
-    // DEBUG_MSG("Hit code at 0x%llx", address);
+    // DEBUG_MSG("Hit code at 0x%" PRIx64, address);
     struct user_data *udata = (struct user_data*)user_data;
 
     int arg_reg[] = {
@@ -79,11 +80,11 @@ void unicorn_hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *use
         uint64_t param_addr = (uint64_t)arg_val[0];
         size_t param_len = (size_t)arg_val[1];
         int param_prot = (int)arg_val[2];
-        OUTPUT_MSG("\n* 0x%llx - mprotect(0x%llx, 0x%zx, %d)", address, param_addr, param_len, param_prot);
+        OUTPUT_MSG("\n* 0x%"PRIx64" - mprotect(0x%"PRIx64", 0x%zx, %d)", address, param_addr, param_len, param_prot);
 
         // reset previous hook if set
         if (memwrite_hook != NULL) {
-            DEBUG_MSG("Previous min: 0x%llx max: 0x%llx", min_addr, max_addr);
+            DEBUG_MSG("Previous min: 0x%"PRIx64" max: 0x%"PRIx64, min_addr, max_addr);
             uc_hook_del(uc, *memwrite_hook);
             free(memwrite_hook);
             memwrite_hook = NULL;
@@ -108,7 +109,7 @@ void unicorn_hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *use
         uc_reg_read(uc, UC_X86_REG_RSP, &rsp);
         uint64_t ret = 0;
         uc_mem_read(uc, rsp, &ret, sizeof(ret));
-        DEBUG_MSG("Return address is 0x%llx", ret);
+        DEBUG_MSG("Return address is 0x%" PRIx64, ret);
         uint64_t rip = ret;
         if (uc_reg_write(uc, UC_X86_REG_RIP, &rip) != UC_ERR_OK) {
             ERROR_MSG("Failed to advance RIP");
@@ -121,7 +122,7 @@ void unicorn_hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *use
     // intptr_t _dyld_get_image_vmaddr_slide(uint32_t image_index)
     // this is the stub address
     if (address == CODE_ADDRESS + udata->dyld_get_slide_stub) {
-        DEBUG_MSG("Previous min: 0x%llx max: 0x%llx", min_addr, max_addr);
+        DEBUG_MSG("Previous min: 0x%" PRIx64 " max: 0x%" PRIx64, min_addr, max_addr);
         for (int i = 0; i < sizeof(arg_reg)/sizeof(*arg_reg); i++) {
             arg_ptr[i] = &arg_val[i];
         }
@@ -129,7 +130,7 @@ void unicorn_hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *use
             ERROR_MSG("Failed to batch read mprotect() arguments registers.");
             return;
         }
-        OUTPUT_MSG("\n* 0x%llx - _dyld_get_image_vmaddr_slide(%u)", address, (uint32_t)arg_val[0]);
+        OUTPUT_MSG("\n* 0x%" PRIx64 " - _dyld_get_image_vmaddr_slide(%u)", address, (uint32_t)arg_val[0]);
         // return a value different than zero to bypass the anti-debugging check
         // it's unused so anything different than zero works
         uint64_t reg_rax = 0x1;
@@ -142,7 +143,7 @@ void unicorn_hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *use
         uc_reg_read(uc, UC_X86_REG_RSP, &rsp);
         uint64_t ret = 0;
         uc_mem_read(uc, rsp, &ret, sizeof(ret));
-        DEBUG_MSG("Return address is 0x%llx", ret);
+        DEBUG_MSG("Return address is 0x%" PRIx64, ret);
         uint64_t rip = ret;
         if (uc_reg_write(uc, UC_X86_REG_RIP, &rip) != UC_ERR_OK) {
             ERROR_MSG("Failed to advance RIP");
@@ -162,8 +163,8 @@ bool unicorn_hook_unmapped_mem(uc_engine *uc, uc_mem_type type, uint64_t address
         ERROR_MSG("Failed to read RIP");
         return false;
     }
-    DEBUG_MSG("Memory exception at 0x%llx", reg_eip);
-    DEBUG_MSG("Unmapped mem hit 0x%llx", address);
+    DEBUG_MSG("Memory exception at 0x%" PRIx64, reg_eip);
+    DEBUG_MSG("Unmapped mem hit 0x%" PRIx64, address);
     print_x64_registers(uc);
     print_stack(uc);
     return false;
@@ -173,7 +174,7 @@ bool unicorn_hook_unmapped_mem(uc_engine *uc, uc_mem_type type, uint64_t address
 bool unicorn_hook_write_mem(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data)
 {
     // uncomment me to see what is going on
-    // DEBUG_MSG("Hit memory write at 0x%llx of %d byte(s): 0x%llx", address, size, value);
+    // DEBUG_MSG("Hit memory write at 0x%" PRIx64 " of %d byte(s): 0x%" PRIx64, address, size, value);
     if (address < min_addr) min_addr = address;
     if (address > max_addr) max_addr = address;
     return true;

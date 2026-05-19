@@ -1,7 +1,7 @@
 /*
  *
  * 🧨 semtex - A Unicorn Emulator to dump obfuscated code from TNT team x86_64 crack library
- * (c) fG!, 2025 - reverser@put.as - https://reverse.put.as
+ * (c) fG!, 2025-2026 - reverser@put.as - https://reverse.put.as
  *
  * Ripped from IDA and Objective-C runtime
  *
