@@ -63,8 +63,8 @@ void unicorn_hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *use
     int arg_reg[] = {
             UC_X86_REG_RDI, UC_X86_REG_RSI, UC_X86_REG_RDX, UC_X86_REG_RCX, UC_X86_REG_R8, UC_X86_REG_R9,
     };
-    uint64_t arg_val[sizeof(arg_reg)] = {0};
-    void *arg_ptr[sizeof(arg_reg)] = {0};
+    uint64_t arg_val[sizeof(arg_reg)/sizeof(*arg_reg)] = {0};
+    void *arg_ptr[sizeof(arg_reg)/sizeof(*arg_reg)] = {0};
 
     // mprotect call
     // int mprotect(void *addr, size_t len, int prot);
