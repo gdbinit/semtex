@@ -175,8 +175,16 @@ int start_emulation(unsigned char *target_buf, size_t target_size, struct user_d
 
     // start the party :-]
     uint64_t start_address = CODE_ADDRESS + udata->load_method;
+    DEBUG_MSG("Starting emulation from 0x%" PRIx64 " until 0x%" PRIx64, start_address, start_address + target_size);
     err = uc_emu_start(uc, start_address, start_address + target_size, 0, 0);    
     // emulation has stopped - so we can use this to dump the decrypted code from Unicorn memory
+    uint64_t reg_rip = 0;
+    if (uc_reg_read(uc, UC_X86_REG_RIP, &reg_rip) != UC_ERR_OK) {
+        ERROR_MSG("Failed to read RIP.");
+        uc_close(uc);
+        return -1;
+    }
+    DEBUG_MSG("Emulation finished at 0x%" PRIx64, reg_rip);
     if (outputfile != NULL) {
         OUTPUT_MSG("=> Dumping the decrypted code...");
         char *output_buf = malloc(target_size);
@@ -256,12 +264,15 @@ void help(const char *name)
 {
     header();
     printf(
-           "Usage: %s -i <input filename> [-o <output filename>] [-h]\n\n"
+           "Usage: %s -i <input filename> [-o <output filename>] [-h] [-v]\n\n"
            "Command options:\n"
            "  -i, --input value       TNT crack dylib to load\n"
-           "  -o, --output value      Output file for the dumped code [optional]"
-           "\n", name);
+           "  -o, --output value      Output file for the dumped code [optional]\n"
+           "  -v, --verbose           Increase logging level with each additional -v"
+           "\n\n", name);
 }
+
+int verbose = 0;
 
 int main(int argc, const char * argv[])
 {
@@ -270,6 +281,7 @@ int main(int argc, const char * argv[])
         { "input", required_argument, NULL, 'i' },
         { "output", required_argument, NULL, 'o' },
         { "help", no_argument, NULL, 'h' },
+        { "verbose", no_argument, NULL, 'v' },
         { NULL, 0, NULL, 0 }
     };
     int option_index = 0;
@@ -279,7 +291,7 @@ int main(int argc, const char * argv[])
     char *outputfile = NULL;
     
     // process command line options
-    while ((c = getopt_long (argc, (char * const*)argv, "hi:o:", long_options, &option_index)) != -1)
+    while ((c = getopt_long (argc, (char * const*)argv, "hvi:o:", long_options, &option_index)) != -1)
     {
         switch (c)
         {
@@ -289,6 +301,9 @@ int main(int argc, const char * argv[])
             case 'o':
                 outputfile = optarg;
                 break;
+            case 'v':
+                verbose += 1;
+                break;
             case 'h':
                 help(argv[0]);
                 exit(0);
@@ -296,7 +311,7 @@ int main(int argc, const char * argv[])
                 break;
         }
     }
-    
+
     if (inputfile == NULL) {
         ERROR_MSG("Missing argument!");
         help(argv[0]);

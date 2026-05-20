@@ -20,6 +20,8 @@
 #include "debug.h"
 #include "disasm.h"
 
+extern int verbose;
+
 uc_hook *memwrite_hook;
 uint64_t min_addr = UINT64_MAX;
 uint64_t max_addr = 0;
@@ -58,7 +60,9 @@ void hexdump(unsigned char *buf, size_t len, uint64_t addr) {
 // the code hook can be used to trace every instruction executed
 void unicorn_hook_code(uc_engine *uc, uint64_t address, uint32_t size, void *user_data)
 {
-    // DEBUG_MSG("Hit code at 0x%" PRIx64, address);
+    if (verbose >= 2) {
+        DEBUG_MSG("Hit code at 0x%" PRIx64, address);
+    }
     struct user_data *udata = (struct user_data*)user_data;
 
     int arg_reg[] = {
@@ -173,8 +177,9 @@ bool unicorn_hook_unmapped_mem(uc_engine *uc, uc_mem_type type, uint64_t address
 // used to detect where memory is being written so we can track the decryption addresses
 bool unicorn_hook_write_mem(uc_engine *uc, uc_mem_type type, uint64_t address, int size, int64_t value, void *user_data)
 {
-    // uncomment me to see what is going on
-    // DEBUG_MSG("Hit memory write at 0x%" PRIx64 " of %d byte(s): 0x%" PRIx64, address, size, value);
+    if (verbose) {
+        DEBUG_MSG("Hit memory write at 0x%" PRIx64 " of %d byte(s): 0x%" PRIx64, address, size, value);    
+    }   
     if (address < min_addr) min_addr = address;
     if (address > max_addr) max_addr = address;
     return true;

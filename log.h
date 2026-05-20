@@ -21,7 +21,7 @@
 #define SEPARATOR_COLOR ANSI_COLOR_BLUE
 #define EFLAGS_COLOR    ANSI_COLOR_RED
 
-#define ERROR_MSG(fmt, ...) fprintf(stderr, "[ERROR] " fmt " \n", ## __VA_ARGS__)
+#define ERROR_MSG(fmt, ...) fprintf(stderr, ANSI_COLOR_RED "[ERROR]" ANSI_COLOR_RESET " " fmt " \n", ## __VA_ARGS__)
 #define WARNING_MSG(fmt, ...) fprintf(stderr, "[WARNING] " fmt " \n", ## __VA_ARGS__)
 #define OUTPUT_MSG(fmt, ...) fprintf(stdout, fmt " \n", ## __VA_ARGS__)
 #define DEBUG_MSG(fmt, ...) fprintf(stdout, "[DEBUG] " fmt "\n", ## __VA_ARGS__)
